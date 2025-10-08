@@ -3,3 +3,6 @@ service_account.json
 .exports_cache.json
 __pycache__/
 *.log
+sa.json
+.venv/
+playwright/.cache/
