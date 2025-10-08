@@ -10,3 +10,7 @@ playwright/.cache/
 sa.json
 .venv/
 playwright/.cache/
+
+sa.json
+.venv/
+playwright/.cache/
