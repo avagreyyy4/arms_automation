@@ -1,0 +1,35 @@
+{
+  "exports": [
+    {
+      "name": "Contact_2027",
+      "tab": "Raw_Contact_27",
+      "filters": { "gradYear": { "type": "checkbox", "selector": "label:2027" } },
+      "export": { "layoutOptionText": "2027 Contact" }
+    },
+    {
+      "name": "Parent_Contact_2027",
+      "tab": "Raw_Parent_Contact_27",
+      "filters": { "gradYear": { "type": "checkbox", "selector": "label:2027" } },
+      "export": { "layoutOptionText": "2027 Parent Contact" }
+    },
+    {
+      "name": "Transcripts_2027",
+      "tab": "Raw_Transcript_27",
+      "filters": { "gradYear": { "type": "checkbox", "selector": "label:2027" } },
+      "export": { "layoutOptionText": "2027 Transcripts" }
+    },
+    {
+      "name": "Socials_2027",
+      "tab": "Raw_Socials_27",
+      "filters": { "gradYear": { "type": "checkbox", "selector": "label:2027" } },
+      "export": { "layoutOptionText": "2027 Socials" }
+    },
+    {
+      "name": "Contact_by_Position_2027",
+      "tab": "Raw_Contact_by_Position_27",
+      "filters": { "gradYear": { "type": "checkbox", "selector": "label:2027" } },
+      "export": { "layoutOptionText": "2027 by Position Export" }
+    }
+  ]
+}
+
