@@ -728,29 +728,88 @@ async def run():
         print("[info] Logging into ARMS ...")
         await page.goto(ARMS_LOGIN_URL, wait_until="load")
         print("[debug] at URL:", page.url)
-
+        
+        # --- fill username/email
         try:
             await page.get_by_label(re.compile(r"Email|Username", re.I)).first.fill(ARMS_USER)
         except:
-            await page.locator('input[type="email"], input[name*="user"], input[type="text"]').first.fill(ARMS_USER)
+            await page.locator('input[type="email"], input[name*="user" i], input[type="text"]').first.fill(ARMS_USER)
+        
+        # click Next if present
         try:
-            await page.get_by_role("button", name=_rx_exact("Next")).first.click(timeout=1500)
+            btn_next = page.get_by_role("button", name=_rx_exact("Next")).first
+            if await btn_next.count():
+                await btn_next.click()
+                await page.wait_for_load_state("networkidle")
+                await page.wait_for_timeout(800)
         except:
             pass
-        try:
-            await page.get_by_label(re.compile(r"Password", re.I)).first.fill(ARMS_PASS)
-        except:
-            await page.locator('input[type="password"]').first.fill(ARMS_PASS)
+        
+        # --- find password field (page or any iframe), then fill
+        async def _find_password_locator():
+            # main page first
+            candidates = [
+                page.get_by_label(re.compile(r"Password", re.I)).first,
+                page.locator('input[type="password"]').first,
+                page.locator('input[name*="pass" i]').first,
+            ]
+            for loc in candidates:
+                try:
+                    await loc.wait_for(timeout=6000)
+                    return loc
+                except:
+                    pass
+            # try frames
+            for fr in page.frames:
+                candidates = [
+                    fr.get_by_label(re.compile(r"Password", re.I)).first,
+                    fr.locator('input[type="password"]').first,
+                    fr.locator('input[name*="pass" i]').first,
+                ]
+                for loc in candidates:
+                    try:
+                        await loc.wait_for(timeout=4000)
+                        return loc
+                    except:
+                        pass
+            return None
+        
+        pwd = await _find_password_locator()
+        if not pwd:
+            # tiny nudge: sometimes a second 'Next' or focus is needed
+            try:
+                await page.keyboard.press("Tab")
+                await page.wait_for_timeout(400)
+                pwd = await _find_password_locator()
+            except:
+                pass
+        
+        if not pwd:
+            raise RuntimeError("Could not find password field after waiting")
+        
+        await pwd.fill(ARMS_PASS)
+        
+        # submit
         submitted = False
-        for b in [page.get_by_role("button", name=re.compile(r"Sign in|Log in|Login", re.I)).first,
-                  page.locator('button[type="submit"]').first]:
-            try: await b.click(timeout=2000); submitted = True; break
-            except: continue
+        for b in [
+            page.get_by_role("button", name=re.compile(r"Sign in|Log in|Login", re.I)).first,
+            page.locator('button[type="submit"]').first,
+        ]:
+            try:
+                await b.click(timeout=4000)
+                submitted = True
+                break
+            except:
+                continue
         if not submitted:
-            try: await page.locator('input[type="password"]').first.press("Enter")
-            except: pass
+            try:
+                await pwd.press("Enter")
+            except:
+                pass
+        
         await page.wait_for_load_state("networkidle")
         print("[info] Login complete.")
+
 
         for exp in config.get("exports", []):
             try:
