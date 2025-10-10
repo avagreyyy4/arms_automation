@@ -2,7 +2,7 @@ name: ARMS Daily Export
 
 on:
   schedule:
-    - cron: "0 13 * * *"     # runs daily at 13:00 UTC
+    - cron: "0 */12 * * *"     # runs every 4 hours
   workflow_dispatch:          # adds a "Run workflow" button
 
 concurrency:
