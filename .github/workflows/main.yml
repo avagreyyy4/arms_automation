@@ -2,8 +2,8 @@ name: ARMS Daily Export
 
 on:
   schedule:
-    - cron: "0 */12 * * *"     # runs every 4 hours
-  workflow_dispatch:          # adds a "Run workflow" button
+    - cron: "0 9,12,15 * * *"     
+  workflow_dispatch:          
 
 concurrency:
   group: arms-daily
