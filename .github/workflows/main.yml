@@ -2,7 +2,7 @@ name: ARMS Daily Export
 
 on:
   schedule:
-    - cron: "0 9,12,15 * * *"     
+    - cron: "0 9 * * *"     
   workflow_dispatch:          
 
 concurrency:
