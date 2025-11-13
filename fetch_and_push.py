@@ -286,7 +286,7 @@ def clean_mobile_numbers(df: pd.DataFrame) -> pd.DataFrame:
     # Adjust this pattern if your headers are slightly different
     phone_cols = [
         col for col in df.columns
-        if re.search(r'mobile|cell', col, flags=re.IGNORECASE)
+        if re.search(r'mobile|cell|phone', col, flags=re.IGNORECASE)
     ]
 
     for col in phone_cols:
