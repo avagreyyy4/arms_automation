@@ -779,7 +779,7 @@ async def do_one_export(page, exp: Dict):
     df = clean_mobile_numbers(df)
 
     # 2) Add Full Name column
-    df = add_full_name_column(df)
+    df = add_full_name_columns(df)
 
     try:
         overwrite_tab(df, tab)
