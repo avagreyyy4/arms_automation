@@ -13,13 +13,6 @@ from dotenv import load_dotenv
 from playwright.async_api import async_playwright, TimeoutError as PWTimeout
 
 # ===================== ENV =====================
-from dotenv import load_dotenv
-load_dotenv()  # local dev convenience; no-op on Cloud Run
-
-import os
-import gspread
-from google.oauth2.service_account import Credentials
-
 os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/SHEETS_SA_JSON")
 SA_PATH   = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "sa.json")
 
@@ -74,9 +67,6 @@ def _write_cache(d):
     except Exception:
         pass
 
-def _rx_exact(s: str):
-    return re.compile(rf"^{re.escape(s)}$", re.I)
-
 def _rx_startswith(s: str):
     return re.compile(rf"^\s*{re.escape(s)}\b", re.I)
 
@@ -90,8 +80,6 @@ def _filename_matches_layout(fn: str, tokens):
     return all(t in s for t in tokens)
 
 # ===================== NAVIGATION / FILTERS =====================
-import re, asyncio
-
 def _rx_exact(s: str):
     return re.compile(rf"^\s*{re.escape(s)}\s*$", re.I)
 
@@ -233,7 +221,28 @@ async def apply_filters(scope, grad_year: Optional[str], statuses: Optional[List
         rx_year = _rx_startswith(grad_year)
         await _scroll_until_visible(scope, rx_year)
         await ensure_checkbox_checked(scope, rx_year)
+        
+def add_full_name_column(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add a 'Full Name' column from 'First Name' and 'Last Name' if present.
+    """
+    if "First Name" not in df.columns or "Last Name" not in df.columns:
+        return df  # nothing to do
 
+    # Don't overwrite if it somehow already exists
+    if "Full Name" in df.columns:
+        return df
+
+    full_name = (
+        df["First Name"].fillna("").astype(str).str.strip() + " " +
+        df["Last Name"].fillna("").astype(str).str.strip()
+    ).str.strip()
+
+    # Insert right after 'Last Name' so it’s near the other name fields
+    insert_at = df.columns.get_loc("Last Name") + 1
+    df.insert(insert_at, "Full Name", full_name)
+
+    return df
         
 # ===================== EXPORT FLOW =====================
 
@@ -699,6 +708,7 @@ async def do_one_export(page, exp: Dict):
     if df is None or df.empty:
         print(f"[info] No new rows for '{layout_text}' (skipped).")
         return
+    df = add_full_name_column(df)
     try:
         overwrite_tab(df, tab)
         print(f"[info] wrote {len(df):,} rows to '{tab}'")
