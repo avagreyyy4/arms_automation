@@ -221,7 +221,39 @@ async def apply_filters(scope, grad_year: Optional[str], statuses: Optional[List
         rx_year = _rx_startswith(grad_year)
         await _scroll_until_visible(scope, rx_year)
         await ensure_checkbox_checked(scope, rx_year)
-        
+
+def add_social_urls(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean Twitter and Instagram usernames:
+      - Remove leading '@'
+      - Strip whitespace
+      - Prepend the correct URL
+    """
+
+    # ---- TWITTER (X) ----
+    if "Twitter" in df.columns:
+        df["Twitter"] = (
+            df["Twitter"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lstrip("@")     # remove @ if present
+            .apply(lambda x: f"https://twitter.com/{x}" if x else "")
+        )
+
+    # ---- INSTAGRAM ----
+    if "Instagram" in df.columns:
+        df["Instagram"] = (
+            df["Instagram"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lstrip("@")     # remove @ if present
+            .apply(lambda x: f"https://instagram.com/{x}" if x else "")
+        )
+
+    return df
+       
 def add_full_name_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add combined name columns:
@@ -765,11 +797,9 @@ async def do_one_export(page, exp: Dict):
         print(f"[info] No new rows for '{layout_text}' (skipped).")
         return
 
-    # 1) Clean mobile/cell columns
     df = clean_mobile_numbers(df)
-
-    # 2) Add Full Name column
     df = add_full_name_columns(df)
+    df = add_social_urls(df)
 
     try:
         overwrite_tab(df, tab)
