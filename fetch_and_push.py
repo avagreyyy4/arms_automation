@@ -252,41 +252,29 @@ def add_full_name_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Father's Last Name"
     ]
 
-    # Only build if at least one exists
     if any(col in df.columns for col in parent_fields):
+
+        # Mother
         mother_first = df.get("Mother's First Name", "").fillna("").astype(str).str.strip()
         mother_last  = df.get("Mother's Last Name", "").fillna("").astype(str).str.strip()
-        father_first = df.get("Father's First Name", "").fillna("").astype(str).str.strip()
-        father_last  = df.get("Father's Last Name", "").fillna("").astype(str).str.strip()
-
-        # Mother full name (if any)
         mother_full = (mother_first + " " + mother_last).str.strip()
 
-        # Father full name (if any)
+        # Father
+        father_first = df.get("Father's First Name", "").fillna("").astype(str).str.strip()
+        father_last  = df.get("Father's Last Name", "").fillna("").astype(str).str.strip()
         father_full = (father_first + " " + father_last).str.strip()
 
-        # Combined parent name
-        parent_full = mother_full.copy()
+        # Insert Mother Full Name after child's Full Name (if it exists)
+        if "Full Name" in df.columns:
+            insert_at = df.columns.get_loc("Full Name") + 1
+        else:
+            insert_at = len(df.columns)
 
-        # If father exists, append
-        parent_full = parent_full.where(father_full == "", 
-                                        parent_full + " / " + father_full)
-        
-        # If mother empty but father exists → use father only
-        parent_full = parent_full.mask(parent_full.str.strip() == "", father_full)
+        df.insert(insert_at, "Mother Full Name", mother_full)
+        df.insert(insert_at + 1, "Father Full Name", father_full)
 
-        # Insert after child's Full Name if present, otherwise at end
-        insert_at = (
-            df.columns.get_loc("Full Name") + 1
-            if "Full Name" in df.columns
-            else len(df.columns)
-        )
-        df.insert(insert_at, "Parent Full Name", parent_full)
-
-        # Drop raw parent name columns
+        # Remove original parent name columns
         df = df.drop(columns=parent_fields, errors="ignore")
-
-    return df
 
 
 def clean_mobile_numbers(df: pd.DataFrame) -> pd.DataFrame:
