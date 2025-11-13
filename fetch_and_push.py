@@ -258,7 +258,8 @@ def add_full_name_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add combined name columns:
       - 'Full Name' from First + Last
-      - 'Parent Full Name' from mother/father names
+      - 'Mother Full Name' from mother name
+      - 'Father Full name' from Father name
     Then remove the raw name fields to reduce Google Sheets load.
     """
 
