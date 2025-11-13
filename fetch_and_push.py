@@ -276,6 +276,8 @@ def add_full_name_columns(df: pd.DataFrame) -> pd.DataFrame:
         # Remove original parent name columns
         df = df.drop(columns=parent_fields, errors="ignore")
 
+    return df
+
 
 def clean_mobile_numbers(df: pd.DataFrame) -> pd.DataFrame:
     """
