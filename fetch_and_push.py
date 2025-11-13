@@ -222,27 +222,72 @@ async def apply_filters(scope, grad_year: Optional[str], statuses: Optional[List
         await _scroll_until_visible(scope, rx_year)
         await ensure_checkbox_checked(scope, rx_year)
         
-def add_full_name_column(df: pd.DataFrame) -> pd.DataFrame:
+def add_full_name_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add a 'Full Name' column from 'First Name' and 'Last Name' if present.
+    Add combined name columns:
+      - 'Full Name' from First + Last
+      - 'Parent Full Name' from mother/father names
+    Then remove the raw name fields to reduce Google Sheets load.
     """
-    if "First Name" not in df.columns or "Last Name" not in df.columns:
-        return df  # nothing to do
 
-    # Don't overwrite if it somehow already exists
-    if "Full Name" in df.columns:
-        return df
+    # ----- PLAYER FULL NAME -----
+    if "First Name" in df.columns and "Last Name" in df.columns:
+        full_name = (
+            df["First Name"].fillna("").astype(str).str.strip() + " " +
+            df["Last Name"].fillna("").astype(str).str.strip()
+        ).str.strip()
 
-    full_name = (
-        df["First Name"].fillna("").astype(str).str.strip() + " " +
-        df["Last Name"].fillna("").astype(str).str.strip()
-    ).str.strip()
+        # Insert after "Last Name"
+        insert_at = df.columns.get_loc("Last Name") + 1
+        df.insert(insert_at, "Full Name", full_name)
 
-    # Insert right after 'Last Name' so it’s near the other name fields
-    insert_at = df.columns.get_loc("Last Name") + 1
-    df.insert(insert_at, "Full Name", full_name)
+        # Drop raw player name columns
+        df = df.drop(columns=["First Name", "Last Name"], errors="ignore")
+
+    # ----- PARENT FULL NAME -----
+    parent_fields = [
+        "Mother's First Name",
+        "Mother's Last Name",
+        "Father's First Name",
+        "Father's Last Name"
+    ]
+
+    # Only build if at least one exists
+    if any(col in df.columns for col in parent_fields):
+        mother_first = df.get("Mother's First Name", "").fillna("").astype(str).str.strip()
+        mother_last  = df.get("Mother's Last Name", "").fillna("").astype(str).str.strip()
+        father_first = df.get("Father's First Name", "").fillna("").astype(str).str.strip()
+        father_last  = df.get("Father's Last Name", "").fillna("").astype(str).str.strip()
+
+        # Mother full name (if any)
+        mother_full = (mother_first + " " + mother_last).str.strip()
+
+        # Father full name (if any)
+        father_full = (father_first + " " + father_last).str.strip()
+
+        # Combined parent name
+        parent_full = mother_full.copy()
+
+        # If father exists, append
+        parent_full = parent_full.where(father_full == "", 
+                                        parent_full + " / " + father_full)
+        
+        # If mother empty but father exists → use father only
+        parent_full = parent_full.mask(parent_full.str.strip() == "", father_full)
+
+        # Insert after child's Full Name if present, otherwise at end
+        insert_at = (
+            df.columns.get_loc("Full Name") + 1
+            if "Full Name" in df.columns
+            else len(df.columns)
+        )
+        df.insert(insert_at, "Parent Full Name", parent_full)
+
+        # Drop raw parent name columns
+        df = df.drop(columns=parent_fields, errors="ignore")
 
     return df
+
 
 def clean_mobile_numbers(df: pd.DataFrame) -> pd.DataFrame:
     """
