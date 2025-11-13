@@ -243,6 +243,28 @@ def add_full_name_column(df: pd.DataFrame) -> pd.DataFrame:
     df.insert(insert_at, "Full Name", full_name)
 
     return df
+
+def clean_mobile_numbers(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove leading '+' from all columns that look like mobile/cell phone numbers.
+    """
+    # Adjust this pattern if your headers are slightly different
+    phone_cols = [
+        col for col in df.columns
+        if re.search(r'mobile|cell', col, flags=re.IGNORECASE)
+    ]
+
+    for col in phone_cols:
+        # Only touch non-null values
+        mask = df[col].notna()
+        df.loc[mask, col] = (
+            df.loc[mask, col]
+            .astype(str)
+            .str.strip()
+            .str.replace(r'^\+', '', regex=True)
+        )
+
+    return df
         
 # ===================== EXPORT FLOW =====================
 
@@ -694,7 +716,6 @@ async def do_one_export(page, exp: Dict):
     except Exception as e:
         print(f"[warn] filter step issue: {e}")
 
-    # ✅ Primary + automatic fallback
     try:
         await open_right_kebab_and_click_export(page)
         await open_export_and_start_job(layout_text, page)
@@ -708,7 +729,13 @@ async def do_one_export(page, exp: Dict):
     if df is None or df.empty:
         print(f"[info] No new rows for '{layout_text}' (skipped).")
         return
+
+    # 1) Clean mobile/cell columns
+    df = clean_mobile_numbers(df)
+
+    # 2) Add Full Name column
     df = add_full_name_column(df)
+
     try:
         overwrite_tab(df, tab)
         print(f"[info] wrote {len(df):,} rows to '{tab}'")
